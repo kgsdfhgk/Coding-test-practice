@@ -1,7 +1,6 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#include <array>
 #include <iostream>
 
 using namespace std;
@@ -11,96 +10,86 @@ bool compare(const vector<int> &vec1, const vector<int> &vec2)
 	return vec1[2] < vec2[2];
 };
 
-int Is_There_Cycle(vector<int> con, int island1, int island2)
+int Is_There_Cycle(vector<vector<int>> &con, int island1, int island2)
 {
+	int answer = 0;
+	int loc1 = -1;
+	int loc2 = -1;
+
 	for (int i = 0; i < con.size(); i++)
 	{
-		if (con[i] == island1)
+		answer = 0;
+
+		for (const auto data : con[i])
 		{
-			for (int j = 0; j < con.size(); j++)
-			{
-				if (con[j] == island2)
-					return 3;
-			}
-			return 1;
+			if (data == island1)
+				answer++;
+
+			if (data == island2)
+				answer++;
 		}
 
-		if (con[i] == island2)
-		{
-			for (int j = 0; j < con.size(); j++)
-			{
-				if (con[j] == island1)
-					return 3;
-			}
+		if (answer == 2)
 			return 2;
+		else if (answer == 1)
+		{
+			if (loc1 != -1)
+			{
+				loc2 = i;
+				break;
+			}
+			else
+				loc1 = i;
 		}
 	}
-	return 0;
+
+	if (loc1 == -1)
+		con.push_back({ island1, island2 });
+	else if (loc2 == -1)
+	{
+		con[loc1].push_back(island1);
+		con[loc1].push_back(island2);
+		sort(con[loc1].begin(), con[loc1].end());
+		con[loc1].erase(unique(con[loc1].begin(), con[loc1].end()));
+	}
+	else
+	{
+		con[loc1].insert(con[loc1].end(), con[loc2].begin(), con[loc2].end());
+		con.erase(con.begin() + loc2);
+	}
+	return 1;
 };
 
 int solution(int n, vector<vector<int>> costs) {
 	int answer = 0;
 	int idx;
-	sort(costs.begin(), costs.end(), compare); // 가중치를 기준으로 오름차순 정렬
+	int num = 0;
+	sort(costs.begin(), costs.end(), compare);
 	vector<vector<int>> connected;
 	connected.push_back(costs[0]);
 	answer += costs[0][2];
+	num++;
 	connected[0].pop_back();
 
-	for(int i = 1; i < n; i++)
+	for (int i = 1; i < costs.size(); i++)
 	{
-		for (int j = 0; j < connected.size(); j++)
+		idx = Is_There_Cycle(connected, costs[i][0], costs[i][1]);
+		if (idx == 1)
 		{
-			idx = Is_There_Cycle(connected[j], costs[i][0], costs[i][1]);
-
-			if (idx == 1)
-			{
-				connected[j].push_back(costs[i][1]);
-				answer += costs[i][2];
-				break;
-			}
-			else if (idx == 2)
-			{
-				connected[j].push_back(costs[i][0]);
-				answer += costs[i][2];
-				break;
-			}
-			else if (idx == 3)
-				break;
-		}
-
-		if (idx == 0)
-		{
-			connected.push_back({ costs[i][0], costs[i][1] });
 			answer += costs[i][2];
+			num++;
 		}
-		else if (idx < 3)
-		{
-			// connected 에서 위의 섬 추가로 인해 서로 연결된 섬이 있는지 확인해야함
-			/*
-			ex)
-			0 1
-			2 3
-			에서
-			0 1 2
-			2 3
-			이 되었다면
-			2 3을 지우고
-			0 1 2 3으로 연결시켜야함
-			*/
-		}
+		if (num == n - 1)
+			return answer;
 	};
 
-	
-
-	
 	return answer;
 }
 
 int main()
 {
-	int n = 4;
-	vector<vector<int>> costs = { {0, 1, 1}, {0, 2, 2}, {1, 2, 5}, {1, 3, 1}, {2, 3, 8} };
+	int n = 5;
+	vector<vector<int>> costs = { {0, 1, 5}, {1, 2, 3}, {2, 3, 3}, {3, 1, 2}, {3, 0, 4}, {2, 4, 6}, {4, 0, 7} };
 	int answer;
 
 	answer = solution(n, costs);
